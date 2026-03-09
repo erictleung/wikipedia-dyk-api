@@ -44,7 +44,7 @@ def scrape_wikipedia_dyk(url, output_file=OUTPUT_FILE):
     # 3. Iterate through elements
     # We look for h3 (Date) (which is nested in a div) and ul (List of facts)
     for element in content.find_all(['div', 'ul'], recursive=False):
-        print("Found element")
+        print("Found div or ul element")
 
         # Identify Headings from h3
         headline = element.find('h3')
@@ -53,7 +53,7 @@ def scrape_wikipedia_dyk(url, output_file=OUTPUT_FILE):
                 print(f"Heading found: {headline}")
                 current_date_raw = headline.get_text().strip()
                 current_date = datetime.strptime(current_date_raw, '%d %B %Y').isoformat()
-                print(f"Heading contents: {current_heading}")
+                print(f"Date contents: {current_date}")
 
         # Identify the Bullet Points (Text)
         elif element.name == 'ul':
@@ -71,17 +71,16 @@ def scrape_wikipedia_dyk(url, output_file=OUTPUT_FILE):
             for item in list_items:
                 if re.search(timestamp_pattern, item):
                     timestamp = item  # This <li> is the date-time key
-            else:
-                facts.append(item)
 
-            # If no timestamp was found in the <li>, fallback to the <h3> heading
-            entry_key = timestamp if timestamp else current_date_heading
+                else:
+                    # If no timestamp was found in the <li>, fallback to the <h3> heading
+                    entry_key = timestamp if timestamp else current_date_heading
 
-            results.append({
-                'batch_timestamp': entry_key,
-                'parent_heading': current_date,
-                'hooks': facts
-            })
+                    results.append({
+                        'batch_timestamp': entry_key,
+                        'parent_heading': current_date,
+                        'hooks': item
+                    })
 
     # Save to JSON
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
