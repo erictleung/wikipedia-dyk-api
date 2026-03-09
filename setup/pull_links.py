@@ -4,6 +4,7 @@
 This script here is to help pull all the text and links from Wikipedia's "Did you know" archive.
 """
 
+from datetime import datetime
 import json
 import re
 from pprint import pprint
@@ -39,23 +40,20 @@ def scrape_wikipedia_dyk(url, output_file=OUTPUT_FILE):
     current_date = None
     current_date_heading = None
     current_heading = None
-    extracted_data = {}
 
     # 3. Iterate through elements
-    # We look for h3 (Date) and ul (List of facts)
+    # We look for h3 (Date) (which is nested in a div) and ul (List of facts)
     for element in content.find_all(['div', 'ul'], recursive=False):
-
-        print(f"Element h3/ul found: {element}")
+        print("Found element")
 
         # Identify Headings from h3
-        if element.class in ['h3']:
-            headline = element.find('span', {'class': 'mw-headline'})
-            print(f"Heading found: {headline}")
-
-            if headline:
-                print(f"Found non-empty headline and saving it in extracted data")
-                current_heading = headline.get_text().strip()
-                extracted_data[current_heading] = []
+        headline = element.find('h3')
+        if headline and element.find_all('h3', {'class': 'info'}) is not None:
+            if 'mw-heading3' in element['class']:
+                print(f"Heading found: {headline}")
+                current_date_raw = headline.get_text().strip()
+                current_date = datetime.strptime(current_date_raw, '%d %B %Y').isoformat()
+                print(f"Heading contents: {current_heading}")
 
         # Identify the Bullet Points (Text)
         elif element.name == 'ul':
@@ -81,7 +79,7 @@ def scrape_wikipedia_dyk(url, output_file=OUTPUT_FILE):
 
             results.append({
                 'batch_timestamp': entry_key,
-                'parent_heading': current_date_heading,
+                'parent_heading': current_date,
                 'hooks': facts
             })
 
